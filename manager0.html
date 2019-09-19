@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INNOVISION manager</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script>
+
+      // var count=0;
+      // var idhtml = "docLeftContent";
+      // var ids;
+      // var num = 0;
+      // var arr = [];
+      window.onload=function(){
+        url = "http://192.168.6.110:10050/Managerhtml";
+        getDoc(url,getFile);
+      }
+
+      function getDoc(url,callback){
+        var xmlhttp;
+        if (window.XMLHttpRequest)
+        {
+          //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+          xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {
+          // IE6, IE5 浏览器执行代码
+          xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange=function()
+        {
+          if (xmlhttp.readyState==4 && xmlhttp.status==200)
+          {
+            // var dataobj = JSON.parse(xmlhttp.responseText);
+            callback(xmlhttp.responseText,url);
+          }
+        }
+
+        xmlhttp.open("GET",url,true);
+        // xmlhttp.setRequestHeader("x-api-key","");
+        xmlhttp.send();
+      }
+
+      // function getFile(dataobj,url){
+      //   var str = "";
+      //   str += "<ul>";
+      //   for(var i = 0;i < dataobj.length;i++){
+      //       for(var key in dataobj[i]){
+      //         if(key == "dir"){
+      //             str +="<span>"+dataobj[i][key]+"</span><div  id=\""+dataobj[i][key]+count+"\"></div>";
+      //             ids = dataobj[i][key]+count;
+      //             getDoc(url+"/"+dataobj[i][key],getfolder);
+      //         }
+      //         // else{
+      //         //     str += "<li>"+dataobj[i][key]+"</li>";
+      //         // }
+      //       }
+      //     }
+      //
+      //     str += "</ul>";
+      //     count++;
+      //
+      //     document.getElementById(idhtml).innerHTML = str;
+      //     idhtml = ids;
+      // }
+      //
+      // function getfolder(dataobj,url){
+      //   getDoc(url,getFile);
+      // }
+      // function getFile(dataobj,ids){
+      //   var str = "";
+      //   document.getElementById(idhtml).innerHTML = "";
+      //   str += "<ul>";
+      //   for(var i = 0;i < dataobj.length;i++){
+      //     for(var key in dataobj[i]){
+      //       if(key == "dir"){
+      //         str +="<span>"+dataobj[i][key]+"</span><div  id=\""+dataobj[i][key]+count+"\"></div>";
+      //         url = url + "/" + dataobj[i][key];
+      //         ids = dataobj[i][key]+count;
+      //         getDoc(url,getFile,ids);
+      //       }else{
+      //         str += "<li>"+dataobj[i][key]+"</li>";
+      //       }
+      //     }
+      //   }
+      //   str += "</ul>";
+      //   count++;
+      //   document.getElementById(idhtml).innerHTML = str;
+      //   idhtml = ids;
+      // }
+      function getFile(datas){
+        var dataobj = JSON.parse(datas);
+        var str = "";
+        str += "<ul>";
+        for(var i = 0;i < dataobj.length;i++){
+          for(var key in dataobj[i]){
+            str += "<a onclick=\"getURL(this)\"><li>"+dataobj[i][key]+"</li></a>";
+          }
+        }
+        str += "</ul>";
+        document.getElementById("docLeftContent").innerHTML = str;
+      }
+
+      // function getURL(self){
+      //   var filename = self.childNodes[0].innerHTML;
+      //   urls = url + "/" + filename;
+      //
+      //   var types = filename.split(".")[1];
+      //   // var showdiv = document.getElementById("doc_right").innerHTML;
+      //   if(types == "jpg" || types == "png"){
+      //      document.getElementById("docRightContent").innerHTML = "<img width=200 src=\""+urls+"\">";
+      //   }
+      //   if(types == "html"){
+      //     getDoc(urls,showtxt);
+      //   }
+      // }
+      //  // || types == "txt" ||types == "md" || types == "java" ||types == "js" || types == "css" || types == "xml" || types == "json"
+      // function showtxt(datas){
+      //   // alert(typeof(datas));
+      //   // var dataTxt = JSON.stringify(datas);
+      //   document.getElementById("docRightContent").innerHTML = "<div contenteditable=\"true\"><pre>"+datas+"</pre></div>";
+      // }
+
+    </script>
+    <style>
+      ul{list-style:none;}
+    </style>
+</head>
+
+<body>
+<div class="container-fluid row">
+  <div class="nav flex-column nav-pills col-2" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+    <a class="nav-link active" id="v-pills-doc-tab" data-toggle="pill" href="#v-pills-doc" role="tab" aria-controls="v-pills-doc" aria-selected="true">文档管理</a>
+    <a class="nav-link" id="v-pills-project-tab" data-toggle="pill" href="#v-pills-project" role="tab" aria-controls="v-pills-project" aria-selected="false">项目管理</a>
+    <a class="nav-link" id="v-pills-Assets-tab" data-toggle="pill" href="#v-pills-Assets" role="tab" aria-controls="v-pills-Assets" aria-selected="false">资产管理</a>
+    <a class="nav-link" id="v-pills-service-tab" data-toggle="pill" href="#v-pills-service" role="tab" aria-controls="v-pills-service" aria-selected="false">服务器备份</a>
+  </div>
+  <div class="tab-content col-10" id="v-pills-tabContent">
+    <div class="tab-pane fade show active" id="v-pills-doc" role="tabpanel" aria-labelledby="v-pills-doc-tab">
+      <div class="doc-left col-4">
+        <div class="doc-left-head">
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="请输入上传文件的路径" aria-label="" aria-describedby="basic-addon1">
+            <div class="input-group-prepend">
+              <button class="btn btn-outline-secondary" type="button">上传</button>
+            </div>
+          </div>
+        </div>
+        <div class="doc-left-content" id="docLeftContent">
+
+        </div>
+      </div>
+      <div class="doc-right col-8" id="docRightContent">
+
+      </div>
+    </div>
+    <div class="tab-pane fade" id="v-pills-project" role="tabpanel" aria-labelledby="v-pills-project-tab">项目管理</div>
+    <div class="tab-pane fade" id="v-pills-Assets" role="tabpanel" aria-labelledby="v-pills-Assets-tab">资产管理</div>
+    <div class="tab-pane fade" id="v-pills-service" role="tabpanel" aria-labelledby="v-pills-service-tab">服务器备份</div>
+  </div>
+</div>
+
+</body>
+</html>

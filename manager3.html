@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INNOVISION manager</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <script type="text/javascript" src="js/index.js"></script>
+    <script>
+      var thingsArray=["设备","办公用品","配件"];
+      var personsArray=["Kim","Avin","Wing","Maxence","Annie"];
+      var thArray = ["ID","所属分类","分配人员","归还日期","分配日期","删除"];
+      var urls = "http://192.168.6.110:10050/";
+      var tableID = "thingID";
+      var num=0;
+      var tabCount=0;
+      window.onload=function(){
+        createTable();
+      }
+      ajax(urls, "GET", "", listJob);
+      setInterval('ajax(urls, "GET", "", listJob)', 1000);
+
+      function ajax(url, method, msg, fn) {
+          var xmlhttp;
+          if(window.XMLHttpRequest){
+              xmlhttp=new XMLHttpRequest();
+          }else {
+              xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+          }
+          xmlhttp.onreadystatechange=function(){
+              if(xmlhttp.readyState==4 && xmlhttp.status==200){
+                  fn(xmlhttp.responseText, url)
+              }
+          }
+          xmlhttp.open(method,url,true);
+          xmlhttp.send(msg);
+      }
+
+      function listJob(dataobj,url){
+        var data = JSON.parse(dataobj);
+        var str = "";
+        str += "<ul>";
+        for(var i=0;i<data.length;i++){
+            for(var key in data[i]){
+              if(key == "file"){
+                str += "<li class=\"filestyle\"><button onclick=\"ajax('"+url+data[i][key]+"','DELETE','')\">删除文件 </button><a href=\"#\" onclick=\"showFile('"+url+data[i][key]+"')\" >"+data[i][key]+"</a></li>";
+              }
+            }
+        }
+        str += "</ul>";
+        document.getElementById("docLeftContent").innerHTML = str;
+      }
+
+      function showFile(url){
+        var xmlfile = url.split(".")[4];
+        var str = "";
+        str += "<iframe width=\"100%\"  height=\"500px\" seamless src=\""+url+"\"></iframe>";
+        document.getElementById("docRightContent").innerHTML = str;
+      }
+
+      // create table and table th element
+      function createTable(){
+        var tableEle = document.createElement("table");
+        var divTabEle = document.createElement("div");
+        tableEle.id = "divTabEle"+tabCount;
+        var str = "";
+        str += "<tr>";
+        for(var th = 0;th < thArray.length;th++){
+          str += "<th scope=\"col\">"+thArray[th]+"</th>";
+        }
+        str += "</tr>";
+        tableEle.innerHTML =  str;
+        tableEle.id = tableID;
+        tableEle.className = 'table table-striped';
+        var tableEleParent = document.getElementById("thingTabContents");
+        tableEleParent.appendChild(divTabEle);
+        divTabEle.appendChild(tableEle);
+      }
+
+      function addtable(){
+        createTable();
+      }
+      // add tr func
+      function addtr(){
+        createTr(tableID);
+      }
+      // create table tr element
+      function createTr(tableID){
+        num++;
+        var str="";
+        var trEle = document.createElement("tr");
+        var trParent = document.getElementById(tableID);
+        trParent.appendChild(trEle);
+        // contenteditable=\"true\" table变为可编辑状态
+        str += "<td >"+num+"</td><td><select class=\"custom-select\" id=\"thingsArraytableGroupSelect"+tabCount+"\">"
+        for(var i=0;i<thingsArray.length;i++){
+            str+="<option value=\""+thingsArray[i]+"\">"+thingsArray[i]+"</option>";
+        }
+        str +="</select></td><td><select class=\"custom-select\" id=\"personsArraytableGroupSelect"+tabCount+"\">";
+        for(var i=0;i<personsArray.length;i++){
+            str+="<option value=\""+personsArray[i]+"\">"+personsArray[i]+"</option>";
+        }
+        str +="</select></td><td >";
+        str += "<input id=\"returnThingDate\" type=\"date\"/>";
+        str +="</td><td >";
+        str += "<input id=\"returnThingDate\" type=\"date\"/>";
+        str +="</td><td><button type=\"button\" class=\"btn btn-primary\"  onclick=\"deltr(this)\">del</button></td>";
+
+        trEle.innerHTML=str;
+      }
+      // delete table tr element
+      function deltr(self){
+         self.parentNode.parentNode.parentNode.removeChild(self.parentNode.parentNode);
+         var trlen = document.getElementById(tableID).childNodes.length;
+         for(var i=1;i<trlen;i++){
+           document.getElementById(tableID).childNodes[i].childNodes[0].innerHTML=i;
+         }
+         num--;
+      }
+
+    </script>
+
+    <style>
+      ul{list-style:none;}
+      .logo{
+        float:left;
+        background-image: url(InnoVision.jpg);
+        background-size: 100% 100%;
+      }
+      #projectLeftContent{
+        float:left;
+      }
+      #projectRightContent{
+        float:right;
+      }
+      #docLeftContent{
+        float:left;
+      }
+      #docRightContent{
+        float:right;
+      }
+
+    </style>
+</head>
+
+<body>
+<div class="container-fluid">
+  <div class="header row">
+    <div class="logo col-2"></div>
+    <div class="banner col-10" style="line-height:120px;text-align:center;">
+      <span><font size=+3 color=red>欢迎使用INNOVISION内部管理平台</font></span>
+    </div>
+  </div>
+  <div class="content row">
+    <div class="nav flex-column nav-pills col-2" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+      <a class="nav-link active" id="v-pills-doc-tab" data-toggle="pill" href="#v-pills-doc" role="tab" aria-controls="v-pills-doc" aria-selected="true">文档管理</a>
+      <a class="nav-link" id="v-pills-project-tab" data-toggle="pill" href="#v-pills-project" role="tab" aria-controls="v-pills-project" aria-selected="false">项目管理</a>
+      <a class="nav-link" id="v-pills-Assets-tab" data-toggle="pill" href="#v-pills-Assets" role="tab" aria-controls="v-pills-Assets" aria-selected="false">资产管理</a>
+      <a class="nav-link" id="v-pills-service-tab" data-toggle="pill" href="#v-pills-service" role="tab" aria-controls="v-pills-service" aria-selected="false">服务器备份</a>
+    </div>
+    <div class="tab-content col-10" id="v-pills-tabContent">
+      <div class="tab-pane fade show active row" id="v-pills-doc" role="tabpanel" aria-labelledby="v-pills-doc-tab">
+        <div class="doc-left col-4" id="docLeftContent">
+
+        </div>
+        <div class="doc-right col-8" id="docRightContent">
+
+        </div>
+      </div>
+      <div class="tab-pane fade row" id="v-pills-project" role="tabpanel" aria-labelledby="v-pills-project-tab">
+        <div  class="nav flex-column nav-pills col-2" role="tablist" aria-orientation="vertical" id="projectLeftContent">
+          <a class="nav-link active" id="v-pills-doc-gitlab" data-toggle="pill" href="#projectHTMLgitlab" role="tab" aria-controls="projectHTMLgitlab" aria-selected="true">GITLAB</a>
+          <a class="nav-link" id="v-pills-project-zentao" data-toggle="pill" href="#projectHTMLzentao" role="tab" aria-controls="projectHTMLzentao" aria-selected="false">禅道</a>
+          <a class="nav-link" id="v-pills-project-email" data-toggle="pill" href="#projectHTMLemail" role="tab" aria-controls="projectHTMLemail" aria-selected="false">Email</a>
+
+          <a class="nav-link" target="_blank"  href="http://dev.cnv8.tv:8900/users/sign_in">GITLAB</a>
+          <a class="nav-link" target="_blank"  href="http://dev.cnv8.tv:8901/index.php?m=user&f=login">禅道</a>
+          <a class="nav-link" target="_blank"  href="http://webmail.idccenter.net/">Email</a>
+
+        </div>
+        <div class="tab-content col-10" id="projectRightContent">
+          <!-- <div class="tab-pane fade" id="projectHTMLgitlab" role="tabpanel" aria-labelledby="v-pills-doc-tab">
+            <div class="embed-responsive embed-responsive-16by9">
+              <iframe class="embed-responsive-item" scrolling="auto"  src="http://dev.cnv8.tv:8900/users/sign_in"></iframe>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="projectHTMLzentao" role="tabpanel" aria-labelledby="v-pills-doc-tab">
+            <div class="embed-responsive embed-responsive-16by9">
+              <iframe class="embed-responsive-item" scrolling="auto"  src="http://dev.cnv8.tv:8901/index.php?m=user&f=login"></iframe>
+            </div>
+          </div> -->
+          <div class="tab-pane fade" id="projectHTMLemail" role="tabpanel" aria-labelledby="v-pills-doc-tab">
+            <div class="embed-responsive embed-responsive-16by9">
+              <iframe class="embed-responsive-item" scrolling="auto" src="http://webmail.idccenter.net/"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="v-pills-Assets" role="tabpanel" aria-labelledby="v-pills-Assets-tab">
+        <div class="btn">
+          <div class="btnadd">
+            <button type="button" class="btn btn-primary"  onclick="addtr()">添加tr</button>
+            <button type="button" class="btn btn-primary"  onclick="addtable()">添加table</button>
+          </div>
+        </div>
+        <div id="thingTabContents"></div>
+      </div>
+      <div class="tab-pane fade" id="v-pills-service" role="tabpanel" aria-labelledby="v-pills-service-tab">服务器备份</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

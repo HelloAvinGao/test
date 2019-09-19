@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INNOVISION manager</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="http://hovertree.com/ziyuan/jquery/jquery-2.2.0.min.js"></script>
+    <script src="http://hovertree.com/texiao/easysector/jquery.easysector.1.0.0.js"></script>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <script type="text/javascript" src="js/index.js"></script>
+    <script>
+      // 设置资源管理的数组
+      var thingsArray={"office":"办公用品耗材类","life":"生活环境用品类","equipment":"设备配件类","books":"图书资料类","others":"其他类"};
+      var personsArray=["company","Kim","Avin","Wing","Maxence","Annie"];
+      var thArray = ["ID","物品名称","数量","所属分类","分配人员","物品属性","归还日期","分配日期","删除"];
+      var thArrayID = ["id","things","number","class","user","attribute","returnDate","giveDate"];
+      var colors = ["#EEEE00","#DC143C","#FFB6C1","#FFA500","#FF83FA","#FF7F24","#FF6A6A",
+      "#BA55D3", "#F5F5DC","#FFFFF0","#FFFAF0","#FFF5EE","#FFEC8B","#FFE4C4","#FFDAB9","#FFC125",
+      "#FF4040","#00FFFF","#FAEBD7","#FA8072","#FF1493","#FF0000",];
+      // 设置创建的table id以及服务器ip
+      var urls = "http://192.168.6.110/manager";
+      var tableID = "thingID";
+      var num=0;
+      var tabCount=0;
+      var Count=0;
+      var returndates,givedates;
+      ajax(urls+"/upload", "GET", "", listJob);
+      setInterval('ajax(urls+"/upload", "GET", "", listJob)', 1000);
+      //ajax 模型
+      function ajax(url, method, msg, fn, id,innerHTMLId) {
+          var xmlhttp;
+          if(window.XMLHttpRequest){
+              xmlhttp=new XMLHttpRequest();
+          }else {
+              xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+          }
+          xmlhttp.onreadystatechange=function(){
+              if(xmlhttp.readyState==4 && xmlhttp.status==200){
+                  fn(xmlhttp.responseText, url, id,innerHTMLId)
+              }
+          }
+          xmlhttp.open(method,url,true);
+          xmlhttp.send(msg);
+      }
+      //sort table json data
+      // function sortTableJsonData(){
+      //   dataobj.sort(function(a, b) {
+      //     return b.played_num - a.played_num;
+      //   })
+      // }
+      // 判断table是否有tr
+      function saveData(){
+        var nodedata = document.getElementById("thingID");
+        if(nodedata.childNodes.length <= 1){
+          alert("请添加列表");
+        }else{
+          putTableData();
+        }
+      }
+      // 获取table中的数据发送到service
+      function putTableData(){
+        var myDate = new Date();
+        var time = myDate.format('yyyy-MM-dd');
+        var nodedata = document.getElementById("thingID");
+        //归还时间必须大于分配之间
+        for(var k = 0;k < nodedata.childNodes[1].childNodes.length;k++){
+          for(var l = 0;l < nodedata.childNodes[1].childNodes[k].childNodes.length-1;l++){
+            if(l == 5 || l == 6){
+              var value = nodedata.childNodes[1].childNodes[k].childNodes[l].innerText;
+              if(l == 5){
+                if(value != "" || value != null || value != undefined){
+                  var returndates = new Date(value);
+                }
+              }
+              if(l == 6){
+                var givedates = new Date(value);
+              }
+              if(returndates < givedates){
+                alert("归还时间不能小于分配时间");
+                nodedata.childNodes[1].childNodes[k].childNodes[3].innerText = time;
+              }
+            }
+          }
+        }
+        var objArr = {};
+        objArr[0] = {};
+        for(var i = 1;i < nodedata.childNodes[1].childNodes.length;i++){
+          var obj = {};
+          var td1InnerText = (nodedata.childNodes[1].childNodes[i].childNodes[1].innerText).trim();
+          var td2InnerText = (nodedata.childNodes[1].childNodes[i].childNodes[2].innerText).trim();
+
+          if(td1InnerText == "" ||td1InnerText == null || td1InnerText == undefined || td2InnerText == "" ||td2InnerText == null || td2InnerText == undefined){
+            continue;
+          }
+
+          for(var j = 1;j < nodedata.childNodes[1].childNodes[i].childNodes.length-1;j++){
+            if(j == 3){
+              var select_id_class = nodedata.childNodes[1].childNodes[i].childNodes[j].childNodes[0].id;
+              var select_id_class_val = document.getElementById(select_id_class).value;
+              obj[thArrayID[j]] = select_id_class_val;
+
+            }else if(j == 4){
+              var select_id_user = nodedata.childNodes[1].childNodes[i].childNodes[j].childNodes[0].id;
+              var select_id_user_val = document.getElementById(select_id_user).value;
+              obj[thArrayID[j]] = select_id_user_val;
+            }else{
+              obj[thArrayID[j]] = nodedata.childNodes[1].childNodes[i].childNodes[j].innerHTML;
+            }
+          }
+          objArr[i] = obj;
+        }
+
+        var dataobj = JSON.stringify(objArr);
+        //send table data to service
+        ajax(urls+"/tableJson/tableData.json", "PUT", dataobj, callback);
+      }
+      //callback empty func
+      function callback(data,url){
+        alert("数据保存成功！！");
+      }
+      // show the file list
+      function listJob(dataobj,url){
+        var data = JSON.parse(dataobj);
+        var str = "";
+        str += "<ul>";
+        for(var i=0;i<data.length;i++){
+          if(data[i]["type"] == "file"){
+            for(var key in data[i]){
+              if(key == "name"){
+                  str += "<li class=\"filestyle\"><button style=\"margin-right:1.5rem;\" class=\"filelist\" onclick=\"ajax('"+url+"/"+data[i][key]+"','DELETE','')\">删除文件 </button><a href=\"#\" onclick=\"showFile('"+url+"/"+data[i][key]+"')\" >"+data[i][key]+"</a></li>";
+              }
+            }
+          }
+        }
+        str += "</ul>";
+        document.getElementById("listfiles").innerHTML = str;
+      }
+      // show the file content
+      function showFile(url){
+        var screenHeights = window.innerHeight-80;
+        var xmlfile = url.split(".")[4];
+        var str = "";
+        str += "<iframe width=\"100%\"  height=\""+screenHeights+"\" seamless src=\""+url+"\"></iframe>";
+        document.getElementById("docRightContent").innerHTML = str;
+      }
+      // create table and table th element
+      function createTable(){
+        var tableEle = document.createElement("table");
+        var divTabEle = document.createElement("div");
+        tableEle.id = "divTabEle"+tabCount;
+        var str = "";
+        str += "<thead class=\"thead-dark\"><tr>";
+        for(var th = 0;th < thArray.length;th++){
+          str += "<th scope=\"col\">"+thArray[th]+"</th>";
+        }
+        str += "</tr></thead><tbody id=\"editDataTbody\">";
+        tableEle.innerHTML =  str;
+        tableEle.id = tableID;
+        tableEle.className = 'table table-striped table-bordered';
+        var tableEleParent = document.getElementById("thingTabContents");
+        tableEleParent.appendChild(divTabEle);
+        divTabEle.appendChild(tableEle);
+        // var x = http://192.168.6.110/tableJson/;
+        ajax("http://192.168.6.110/manager/tableJson/tableData.json", "GET", "", showTableJsonData);
+      }
+      //load old table json data
+      function showTableJsonData(dataobj,url){
+        var data = JSON.parse(dataobj);
+        for(var i = 0;i< Object.keys(data).length;i++){
+          showTableEveryJsonData(data[i],i);
+        }
+        // var nodeids = "thingID";
+        goPage(1,10,"editDataTbody");
+      }
+      function showTableEveryJsonData(data,i){
+        var idNum = i;
+        var str="";
+        var trEle = document.createElement("tr");
+
+        var trParent = document.getElementById("editDataTbody");
+        trParent.appendChild(trEle);
+
+        // contenteditable=\"true\" table变为可编辑状态
+        str += "<td>"+idNum+"</td><td contenteditable=\"true\">"+data.things+"<td contenteditable=\"true\">"+data.number+"</td></td><td><select class=\"custom-select\" id=\"thingsArraytableGroupSelect"+data.id+"\">";
+        for(var key in thingsArray){
+          if(key == data.class){
+            str+="<option selected=\"selected\" value=\""+data.class+"\">"+thingsArray[key]+"</option>";
+          }else{
+            str+="<option value=\""+key+"\">"+thingsArray[key]+"</option>";
+          }
+        }
+
+        str +="</select></td><td><select class=\"custom-select\" id=\"personsArraytableGroupSelect"+data.id+"\">";
+        for(var i=0;i<personsArray.length;i++){
+          if(personsArray[i] == data.user){
+            str+="<option selected=\"selected\" value=\""+personsArray[i]+"\">"+data.user+"</option>";
+          }else{
+            str+="<option value=\""+personsArray[i]+"\">"+personsArray[i]+"</option>";
+          }
+        }
+        str +="</select></td></td><td contenteditable=\"true\">"+data.attribute+"<td contenteditable=\"true\">"+data.returnDate;
+        str +="</td><td contenteditable=\"true\">"+data.giveDate+"";
+        str +="</td><td>";
+        // str += "<button type=\"button\" style=\"margin-left:10px;margin-right:10px;\" class=\"btn btn-primary\" data-toggle=\"modal\" data-target=\"#exampleModal\">修改</button>"; onclick=\"loadAlertFormEle(this)\"
+        // str += "<button type=\"button\" style=\"margin-left:10px;margin-right:10px;\" class=\"btn btn-primary\" onclick=\"loadAlertFormEle(this)\">修改</button>";
+        str +="<button type=\"button\" class=\"btn btn-primary\"  onclick=\"deltr(this)\">del</button></td>";
+
+        trEle.innerHTML=str;
+      }
+      // 分页
+      function goPage(pno,psize,ids){
+        if(typeof(ids) != "string"){
+          var ids = ids.id;
+        }
+        var itable = document.getElementById(ids);
+        var num = itable.rows.length;//表格所有行数(所有记录数)
+        var totalPage = 0;//总页数
+        var pageSize = psize;//每页显示行数
+        //总共分几页
+        if(num/pageSize > parseInt(num/pageSize)){
+            totalPage=parseInt(num/pageSize)+1;
+        }else{
+            totalPage=parseInt(num/pageSize);
+        }
+
+        var currentPage = pno;//当前页数
+        var startRow = (currentPage - 1) * pageSize+1;//开始显示的行 31
+        var endRow = currentPage * pageSize;//结束显示的行  40
+        endRow = (endRow > num)? num : endRow;  //40
+          //遍历显示数据实现分页
+        for(var i=0;i<num;i++){
+          var irow = itable.rows[i];
+          if(irow.childNodes[0].nodeName == "TH"){
+            continue;
+          }else{
+            if(i>=startRow && i<=endRow){
+              irow.className = "";
+            }else{
+              irow.className = "d-none";
+            }
+          }
+        }
+        var tempStr = "共"+num+"条记录 分"+totalPage+"页 当前第"+currentPage+"页";
+        if(currentPage>1){
+          tempStr += "<a href=\"#\" class=\"btn\" onClick=\"goPage("+(1)+","+psize+","+ids+")\">首页</a>";
+          tempStr += "<a href=\"#\" class=\"btn\" onClick=\"goPage("+(currentPage-1)+","+psize+","+ids+")\"><上一页</a>";
+        }else{
+          tempStr += "首页";
+          tempStr += "<上一页";
+        }
+        for(var j = 1;j < totalPage+1;j++){
+          tempStr += "<a href=\"#\" class=\"btn\" onClick=\"goPage("+(j)+","+psize+","+ids+")\">"+j+"</a>";
+        }
+        if(currentPage<totalPage){
+          tempStr += "<a href=\"#\" class=\"btn\" onClick=\"goPage("+(currentPage+1)+","+psize+","+ids+")\">下一页></a>";
+          tempStr += "<a href=\"#\" class=\"btn\" onClick=\"goPage("+(totalPage)+","+psize+","+ids+")\">尾页</a>";
+        }else{
+          tempStr += "下一页>";
+          tempStr += "尾页";
+        }
+        document.getElementById("barcon").innerHTML = tempStr;
+      }
+      // create table tr element
+      function createTr(tableID){
+        var myDate = new Date();
+        var time = myDate.format('yyyy-MM-dd');
+        var trParent = document.getElementById(tableID);
+        var num = trParent.childNodes.length;
+        goPage(parseInt(num/10)+1,10,tableID);
+        var str="";
+        var trEle = document.createElement("tr");
+        trParent.appendChild(trEle);
+        // contenteditable=\"true\" table变为可编辑状态
+        str += "<td>"+num+"</td><td contenteditable=\"true\"><td contenteditable=\"true\"></td></td><td><select class=\"custom-select\" id=\"thingsArraytableGroupSelect"+num+"\">"
+        for(var key in thingsArray){
+            str+="<option value=\""+key+"\">"+thingsArray[key]+"</option>";
+        }
+        str +="</select></td><td><select class=\"custom-select\" id=\"personsArraytableGroupSelect"+num+"\">";
+        for(var i=0;i<personsArray.length;i++){
+            str+="<option value=\""+personsArray[i]+"\">"+personsArray[i]+"</option>";
+        }
+        str +="</select></td><td contenteditable=\"true\"></td><td contenteditable=\"true\">";
+        // str += "<input id=\"returnThingDate"+num+"\" type=\"date\"/>";
+        str +="</td><td contenteditable=\"true\">"+time+"";
+        // str += "<input id=\"returnThingDate"+num+"\" type=\"date\"/>";
+        str +="</td><td>";
+        // str += "<button type=\"button\" style=\"margin-left:10px;margin-right:10px;\" class=\"btn btn-primary\" data-toggle=\"modal\" data-target=\"#exampleModal\">修改</button>";
+        // str += "<button type=\"button\" style=\"margin-left:10px;margin-right:10px;\" class=\"btn btn-primary\" onclick=\"loadAlertFormEle(this)\">修改</button>";
+        str += "<button type=\"button\" class=\"btn btn-primary\"  onclick=\"deltr(this)\">del</button></td>";
+
+        trEle.innerHTML=str;
+        if(num%10 == 0){
+          goPage(num/10,10,tableID);
+        }else{
+          goPage(parseInt(num/10)+1,10,tableID);
+        }
+      }
+      //格式化时间
+      Date.prototype.format = function(format){
+         var o = {
+         "M+" : this.getMonth()+1, //month
+         "d+" : this.getDate(),    //day
+         "h+" : this.getHours(),   //hour
+         "m+" : this.getMinutes(), //minute
+         "s+" : this.getSeconds(), //second
+         "q+" : Math.floor((this.getMonth()+3)/3),  //quarter
+         "S" : this.getMilliseconds() //millisecond
+         }
+         if(/(y+)/.test(format)) format=format.replace(RegExp.$1,
+         (this.getFullYear()+"").substr(4 - RegExp.$1.length));
+         for(var k in o)if(new RegExp("("+ k +")").test(format))
+         format = format.replace(RegExp.$1,
+         RegExp.$1.length==1 ? o[k] :
+         ("00"+ o[k]).substr((""+ o[k]).length));
+         return format;
+        }
+      // check input date
+      function checkDate(values){
+         var reg = /^(\d{4})-(\d{2})-(\d{2})$/;
+         var arr = reg.exec(values);
+         if (!reg.test(values) && RegExp.$2 <= 12 && RegExp.$3 <= 31) {
+             alert("请保证输入的为yyyy-mm-dd日期格式");
+         }
+         return values;
+      }
+      // delete table tr element
+      function deltr(self){
+         self.parentNode.parentNode.parentNode.removeChild(self.parentNode.parentNode);
+         var trlen = document.getElementById(tableID).childNodes[1].childNodes.length;
+         for(var i=0;i<trlen;i++){
+           document.getElementById(tableID).childNodes[1].childNodes[i].childNodes[0].innerHTML=i+1;
+         }
+         // num--;
+      }
+      function cancelActive(self){
+        var nodeid = "office";
+        var innerHTMLNodeid = "tableClass";
+        menuStyle(nodeid);
+        ajax(urls+"/tableJson/tableData.json", "GET", "", showTableData, nodeid, innerHTMLNodeid);
+        // var nodeid = self.parentNode.parentNode.parentNode.parentNode.id;
+        var p = document.getElementById("accordion");
+        for(var i = 1,pl = p.childNodes.length;i<pl;i+=2){
+          for(var j = 0;j<p.childNodes[i].childNodes[3].childNodes[1].childNodes.length;j++){
+            if(p.childNodes[i].childNodes[3].childNodes[1].childNodes[j].nodeName == "A"){
+              p.childNodes[i].childNodes[3].childNodes[1].childNodes[j].setAttribute('class', "nav-link");
+            }
+          }
+        }
+
+      }
+      //设置跳转按钮点击时的效果
+      function activityClickup(self){
+        self.setAttribute("class","bghide nav-link");
+      }
+      //设置跳转按钮点击后的效果
+      function activityClickdown(self){
+        self.setAttribute("class","bgshow nav-link");
+      }
+      // show the editData menu
+      function createdata(self){
+        var nodeid = self.id;
+        menuStyle(nodeid);
+        var datadiv = document.getElementById("tableClass");
+        var str = "";
+        str += "<div id=\"thingTabContents\"></div><div class=\"row\"><div id=\"barcon\" style=\"line-height:3.5rem;\" class=\"col-6\"></div><div class=\"btn btnDiv col-6\">";
+        str += "<button type=\"button\" class=\"btn btn-primary\"  onclick=\"createTr('editDataTbody')\">添加列表</button>";
+        // str += "<button type=\"button\" style=\"margin-left:10px;margin-right:10px;\" class=\"btn btn-primary\" data-toggle=\"modal\" data-target=\"#exampleModal\">保存数据alert</button>";
+        str += "<button type=\"button\" style=\"margin-left:10px;\" class=\"btn btn-primary\"  onclick=\"saveData()\">保存数据</button>";
+        str += "</div></div>";
+
+        datadiv.innerHTML = str;
+        createTable();
+      }
+      //get table json data
+      function getdata(self){
+        var nodeid = self.id;
+        var innerHTMLNodeid = "tableClass";
+        menuStyle(nodeid);
+        ajax(urls+"/tableJson/tableData.json", "GET", "", showTableData, nodeid, innerHTMLNodeid);
+      }
+      // 显示汇总数据
+      function getTotaldata(self){
+        var nodeid = self.id;
+        menuStyle(nodeid);
+        ajax(urls+"/tableJson/tableData.json", "GET", "", showTotaldata);
+      }
+      //add select element
+      function showTotaldata(dataobj,url){
+        var str = "";
+        // select 多选
+        // <select multiple=\"multiple\">
+        var data = JSON.parse(dataobj);
+        var dataThingsArr = [];
+        for(var k = 0; k < Object.keys(data).length; k++){
+          dataThingsArr[k] = data[k].things;
+        }
+        var ThingsArr = unique(dataThingsArr);
+        for(var i = 0;i < 3;i++){
+          str += "<div class=\"selectStyle\"><select>";
+          if(i == 0){
+            for(var j = 0;j < personsArray.length;j++){
+              str += "<option value=\""+personsArray[j]+"\">"+personsArray[j]+"</option>";
+            }
+          }else if(i == 1){
+            str += "<option value=\"choose\" selected=\"selected\">--choose--</option>";
+            for(var key in thingsArray){
+              str += "<option value=\""+key+"\">"+thingsArray[key]+"</option>";
+            }
+          }else if(i == 2){
+            str += "<option value=\"choose\" selected=\"selected\">--choose--</option>";
+            for(var k = 0;k < ThingsArr.length;k++){
+              str += "<option value=\""+ThingsArr[k]+"\">"+ThingsArr[k]+"</option>";
+            }
+          }
+
+          str += "</select></div>";
+        }
+        str += "<div class=\"selectStyle\"><button onclick=\"ajax('"+url+"', 'GET', '', showSearchData)\">SearchData</button></div><div  id=\"showSelectTable\"></div><div  id=\"easysector\"></div>";
+        document.getElementById("tableClass").innerHTML = str;
+      }
+      //search data show
+      function showSearchData(dataobj){
+
+        var data = JSON.parse(dataobj);
+        var nodeid = document.getElementById("tableClass");
+        var selectArr = {};
+        for(var i = 0; i< nodeid.childNodes.length-1;i++){
+          if(i == 0){
+            selectArr["user"] = nodeid.childNodes[i].childNodes[0].options[nodeid.childNodes[i].childNodes[0].selectedIndex].value;
+          }else if(i == 1){
+            selectArr["class"] = nodeid.childNodes[i].childNodes[0].options[nodeid.childNodes[i].childNodes[0].selectedIndex].value;
+          }else if(i == 2){
+            selectArr["things"] = nodeid.childNodes[i].childNodes[0].options[nodeid.childNodes[i].childNodes[0].selectedIndex].value;
+          }
+        }
+        if(selectArr['user'] != "choose"){
+          var dataobjs = [];
+          var count = 0;
+          for(var i = 0;i < Object.keys(data).length;i++){
+            if(data[i]['user'] == selectArr['user']){
+              dataobjs[count] = data[i];
+              count++;
+            }
+          }
+          var data = dataobjs;
+        }
+        if(selectArr['class'] != "choose"){
+          var dataobjs = [];
+          var count = 0;
+          for(var i = 0;i < Object.keys(data).length;i++){
+            if(data[i]['class'] == selectArr['class']){
+              dataobjs[count] = data[i];
+              count++;
+            }
+          }
+          var data = dataobjs;
+        }
+        if(selectArr['things'] != "choose"){
+          var dataobjs = [];
+          var count = 0;
+          for(var i = 0;i < Object.keys(data).length;i++){
+            if(data[i]['things'] == selectArr['things']){
+              dataobjs[count] = data[i];
+              count++;
+            }
+          }
+
+          var data = dataobjs;
+        }
+        var dataobjs = JSON.stringify(data);
+        showTableData(dataobjs,"","","showSelectTable");
+        showPIE(data);
+      }
+      // 根据table内数据，显示PIE图
+      function showPIE(data){
+        var h_items = new Array();
+        var thingsArray = [];
+        for(var i = 0; i < data.length;i++){
+          for(var key in data[i]){
+            if(key == "things"){
+              thingsArray[i]=data[i][key];
+            }
+          }
+        }
+        var ThingsArr = unique(thingsArray);
+        var numArr = {};
+        var h_title;
+        for(var j = 0;j<ThingsArr.length;j++){
+          var sum = 0;
+          for(var k = 0; k < data.length;k++){
+            if(data[k]["things"] == ThingsArr[j]){
+              h_title = data[k]["class"] + ":" +data[k]["things"];
+              sum += parseInt(data[k]["number"]);
+            }
+          }
+          numArr[ThingsArr[j]]=sum;
+          h_items[j] = {
+            "h_title": h_title,
+            "h_amount": sum,
+            "h_color": colors[j]
+          }
+        }
+        document.getElementById("easysector").innerHTML = "";
+        $("#easysector").easysector({
+          "h_items": h_items,
+          "h_title": "Things Percent",
+          "h_width": 260,
+          "h_borderColor": "silver",
+          "h_poindlength": 0,
+          "h_showamount": true,
+          "h_backColor": "#fff",
+          "h_recwidth": 20,
+          "h_titlesize": 24,
+          "h_Radii": 125,
+          "h_infosize": 16
+        });
+
+      }
+      // 数组去重
+      function unique(arr){
+        var hash=[];
+        for (var i = 0; i < arr.length; i++) {
+           if(hash.indexOf(arr[i])==-1){
+            hash.push(arr[i]);
+           }
+        }
+        return hash;
+      }
+      // show the table json data
+      function showTableData(dataobj,url,nodeid,innerHTMLNodeid){
+
+        var sum = 1;
+        var countNum = 0;
+        var data = JSON.parse(dataobj);
+
+        var nodeids = "classTables"+nodeid;
+        var str = "";
+        var strth = "";
+        str += "<div><table id=\""+nodeids+"\" class=\"table table-striped table-bordered\"><thead class=\"thead-dark\"><tr>";
+        for(var j = 0;j < thArray.length-1;j++){
+          str += "<th scope=\"col\">"+thArray[j]+"</th>";
+        }
+        str += "</thead></tbody>";
+        var datas = [];
+        for(var i = 0; i < Object.keys(data).length;i++){
+          if(nodeid == data[i].class || nodeid == ""){
+            datas[countNum] = data[i];
+            countNum++;
+          }
+        }
+        var sum=0;
+        for(var i = 0; i < datas.length;i++){
+          sum++;
+          str += "<tr>";
+          str += "<td>"+sum+"</td>";
+          str += "<td>"+datas[i].things+"</td>";
+          str += "<td>"+datas[i].number+"</td>";
+          for(var key in thingsArray){
+            if(key == datas[i].class){
+              str += "<td>"+thingsArray[key]+"</td>";
+            }
+          }
+          str += "<td>"+datas[i].user+"</td>";
+          str += "<td>"+datas[i].attribute+"</td>";
+          str += "<td>"+datas[i].returnDate+"</td>";
+          str += "<td>"+datas[i].giveDate+"</td>";
+          str += "</tr>";
+        }
+        str += "</tbody></table></div><div id=\"barcon\"></div>";
+        document.getElementById(innerHTMLNodeid).innerHTML = str;
+        goPage(1,10,nodeids);
+      }
+      //set table json menu style
+      function menuStyle(menuID){
+        var menuChild = document.getElementById(menuID).parentNode.parentNode.childNodes;
+        for(var i = 1; i< menuChild.length;i+=2){
+          menuChild[i].setAttribute("class","nav-item  col-1 bgstyle");
+        }
+        if(menuID == "office"){
+          document.getElementById(menuID).parentNode.setAttribute("class","nav-item  col-1 officeBgStyle");
+        }
+        if(menuID == "life"){
+          document.getElementById(menuID).parentNode.setAttribute("class","nav-item  col-1 lifeBgStyle");
+        }
+        if(menuID == "equipment"){
+          document.getElementById(menuID).parentNode.setAttribute("class","nav-item  col-1 equipmentBgStyle");
+        }
+        if(menuID == "books"){
+          document.getElementById(menuID).parentNode.setAttribute("class","nav-item  col-1 booksBgStyle");
+        }
+        if(menuID == "others"){
+          document.getElementById(menuID).parentNode.setAttribute("class","nav-item  col-1 othersBgStyle");
+        }
+        if(menuID == "editData"){
+          document.getElementById(menuID).parentNode.setAttribute("class","nav-item  col-1 editDataBgStyle");
+        }
+        if(menuID == "totalData"){
+          document.getElementById(menuID).parentNode.setAttribute("class","nav-item  col-1 totalDataBgStyle");
+        }
+      }
+      //弹出框添加元素
+      // function loadAlertFormEle(self){
+      //   // ajax(urls+"/tableJson/tableData.json", "GET", "", showTableDataToAlertForm);
+      //   console.log(self.parentNode.parentNode.childNodes.length);
+      //   var selfTrData = {};
+      //
+      //   // selfTrData["id"] = self.parentNode.parentNode.childNodes[0].innerHTML;
+      //   for(var k = 0;k < thArrayID.length;k++){
+      //     if(k == "3" || k == "4"){
+      //       var val = document.getElementById(self.parentNode.parentNode.childNodes[k].childNodes[0].id).value;
+      //       selfTrData[thArrayID[k]] = val;
+      //     }else{
+      //       selfTrData[thArrayID[k]] = self.parentNode.parentNode.childNodes[k].innerHTML;
+      //     }
+      //   }
+      //
+      //   var str = "";
+      //   str += "<div class=\"modal-dialog\" role=\"document\">";
+      //   str += "<div class=\"modal-content\"><div class=\"modal-header\">";
+      //   str += "<h5 class=\"modal-title\" id=\"exampleModalLabel\">物品信息</h5>";
+      //   str += "<button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\">";
+      //   str += "<span aria-hidden=\"true\">&times;</span></button></div>";
+      //   str += "<div class=\"modal-body\" id=\"alertFormTableData\">";
+      //   str += "<form>";
+      //   for(var i = 1;i < thArrayID.length;i++){
+      //     if(thArrayID[i] == "user"){
+      //       str += "<div class=\"form-group\">";
+      //       str += "<label for=\""+thArrayID[i]+"\" class=\"col-form-label\">"+thArray[i]+"</label>";
+      //       str += "<select class=\"custom-select\" id=\"personsArrayAlertFormGroupSelect\">";
+      //       for(var j=0;j<personsArray.length;j++){
+      //
+      //           str+="<option value=\""+personsArray[j]+"\">"+personsArray[j]+"</option>";
+      //       }
+      //       str += "</select></div>";
+      //       continue;
+      //     }
+      //     if(thArrayID[i] == "class"){
+      //       str += "<div class=\"form-group\">";
+      //       str += "<label for=\""+thingsArray[i]+"\" class=\"col-form-label\">"+thArray[i]+"</label>";
+      //       str += "<select class=\"custom-select\" id=\"classArrayAlertFormGroupSelec\">";
+      //       for(var key in thingsArray){
+      //           str+="<option value=\""+key+"\">"+thingsArray[key]+"</option>";
+      //       }
+      //       str += "</select></div>";
+      //       continue;
+      //     }
+      //     str += "<div class=\"form-group\">";
+      //     str += "<label for=\""+thArrayID[i]+"\" class=\"col-form-label\">"+thArray[i]+"</label>";
+      //     str += "<input type=\"text\" class=\"form-control\"  id=\""+thArrayID[i]+"\">"
+      //     str += "</div>";
+      //   }
+      //
+      //   str += "</form></div>";
+      //   str += "<div class=\"modal-footer\">";
+      //   str += "<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Close</button>";
+      //   str += "<button type=\"button\" class=\"btn btn-primary\" onclick=\"showTableDataToAlertForm()\">Send message</button>";
+      //   str += "</div></div></div>";
+      //
+      //   document.getElementById("exampleModals").innerHTML = str;
+      // }
+      // // 弹出框组合数据
+      // function showTableDataToAlertForm(){
+      //   ajax(urls+"/tableJson/tableData.json", "GET", "", saveDataAlertform);
+      //   // ajax(urls+"/tableJson/tableData.json", "PUT", dataobj, callback);
+      // }
+      //弹出框保存数据
+      // function saveDataAlertform(dataobj){
+      //   var data = JSON.parse(dataobj);
+      //   var sums = Object.keys(data).length;
+      //   var alertFormParentNode = document.getElementById("alertFormTableData");
+      //   var form_group_len = alertFormParentNode.childNodes[0].childNodes.length;
+      //   var obj = {};
+      //   obj["id"] = sums+1;
+      //   for(var i = 0;i < form_group_len;i++){
+      //     var nodeObj = alertFormParentNode.childNodes[0].childNodes[i].childNodes[1];
+      //     if(nodeObj.id == "classArrayAlertFormGroupSelec"){
+      //       obj["class"] = nodeObj.value;
+      //     }else if(nodeObj.id == "personsArrayAlertFormGroupSelect"){
+      //       obj["user"] = nodeObj.value;
+      //     }else{
+      //       obj[nodeObj.id] = nodeObj.value;
+      //     }
+      //   }
+      //   data[sums] = obj;
+      //   var dataobj = JSON.stringify(data);
+      //   // ajax(urls+"/tableJson/tableData.json", "PUT", dataobj);
+      //   goPage(1,11,"thingID");
+      // }
+      //添加time input to json for crontab
+      function serverCopy(){
+        var isok =false;
+        var ipVal = document.getElementById("inputip").value.trim();
+        var userVal = document.getElementById("inputuser").value;
+        var pwdVal = document.getElementById("inputPassword").value;
+        var folderVal = document.getElementById("inputfolder").value.trim();
+        var minuteVal = document.getElementById("inputminute").value.trim();
+        var hourVal = document.getElementById("inputhour").value.trim();
+        var daysVal = document.getElementById("inputDays").value.trim();
+        var monthVal = document.getElementById("inputMonth").value.trim();
+        var weekVal = document.getElementById("inputweek").value.trim();
+        if(ipVal != "" && userVal != "" && pwdVal != "" && folderVal != "" && minuteVal != "" && hourVal != "" && daysVal != "" && monthVal != "" && weekVal != ""){
+          if(ipVal){
+            var isok =false;
+            if(regIps(isok,ipVal) == false){
+              alert("IP输入错误!");
+              return false;
+            }
+          }
+          if(folderVal){
+            var re = /^\/(\w+\/?)+$/;
+            if(!re.test(folderVal)){
+              alert("路径的格式输入错误!");
+              return false;
+            }
+          }
+          if(reptime(isok,"Minute",minuteVal) == true && reptime(isok,"Hour",hourVal) == true && reptime(isok,"Days",daysVal) == true
+           && reptime(isok,"Month",monthVal) == true && reptime(isok,"Week",weekVal) == true ){
+             var obj = {
+               // 服务端的帐号和密码，端口，文件备份存放目录，不备份文件名称，服务端ip，备份文件地址
+               "ip":ipVal,
+               "password":pwdVal,
+               "user":userVal,
+               "port":"80",
+               "folder":folderVal,
+               "time":{
+                 "minute":minuteVal,
+                 "hour":hourVal,
+                 "day":daysVal,
+                 "month":monthVal,
+                 "week":weekVal,
+               }
+             }
+             var obj = JSON.stringify(obj);
+             ajax(urls+"/serverCopy/serverData.json", "PUT", obj, callback);
+           }
+        }else{
+          alert("所有的输入不可为空");
+          return false;
+        }
+      }
+      //verify the time input data is in rule
+      function reptime(isok,str,val){
+        //verify the data of the time input is numbers
+        if(isNumber(val) == true){
+          if(chooseTime(isok,str,val) == true){
+            isok = true;
+          }else{
+            isok = false;
+          }
+          return isok;
+        }else{
+          //verify the data of the time input is like */2 and  /2 and  *
+          if(checkRate(val)){
+            if(val.indexOf("*") != -1){
+              if(val.split("/")[0] == "*"){
+                if(chooseTime(isok,str,val.split("/")[1]) == true){
+                  isok = true;
+                }else{
+                  isok = false;
+                }
+                return isok;
+              }
+            }else{
+              if(val.split("/")[0] == ""){
+                if(chooseTime(isok,str,val.split("/")[1]) == true){
+                  isok = true;
+                }else{
+                  isok = false;
+                }
+                return isok;
+              }
+            }
+            //verify the data of the time input is like 1-3/2 1-2
+            if(val.indexOf("-") != -1){
+              if(val.indexOf("/") != -1){
+                var arr = val.split("-");
+                var array = arr[1].split("/");
+                if(chooseTime(isok,str,arr[0]) == true && chooseTime(isok,str,array[0]) == true && chooseTime(isok,str,array[1]) == true){
+                  isok = true;
+                }else{
+                  isok = false;
+                }
+                return isok;
+              }else{
+                var array = val.split("-");
+                if(chooseTime(isok,str,array[0]) == true && chooseTime(isok,str,array[1]) == true){
+                  isok = true;
+                }else{
+                  isok = false;
+                }
+                return isok;
+              }
+            }
+          }else{
+            //verify the data of the time input is like 1,2,3 and 1,2,3,
+            var re = /^(\d+\,?)+$/;
+            if(re.test(val)){
+              if(val.indexOf(",") != -1){
+                var array = val.split(",");
+                for(var i = 0; i < array.length; i++){
+                  if(chooseTime(isok,str,array[i]) == false){
+                    isok = false;
+                  }else{
+                    isok = true;
+                  }
+                  return isok;
+                }
+              }
+            }else{
+              alert(str+"的格式输入错误!");
+              return false;
+            }
+          }
+        }
+      }
+      // choose the minute or hour or day or month or week
+      function chooseTime(isok,str,numbers){
+        if(str == "Minute"){
+           isok =setTime(isok,str,numbers,0,60);
+           return isok;
+        }else if(str == "Hour"){
+           isok =setTime(isok,str,numbers,0,24);
+           return isok;
+        }else if(str == "Days"){
+           isok =setTime(isok,str,numbers,1,32);
+           return isok;
+        }else if(str == "Month"){
+           isok =setTime(isok,str,numbers,1,13);
+           return isok;
+        }else if(str == "Week"){
+           isok =setTime(isok,str,numbers,1,8);
+           return isok;
+        }
+
+      }
+      //verify the input number is in the rule
+      function setTime(isok,str,numbers,min,max){
+        if(parseInt(numbers) < min || parseInt(numbers) >= max){
+          alert(str+"的数字不符合!");
+          isok = false;
+        }else{
+          isok = true;
+        }
+        return isok;
+      }
+      //验证ip格式
+      function regIps(isok,ipVal){
+        var regIps = /^(((25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|[0-9])\.){3}(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|[0-9]))$/;
+        if(!regIps.test(ipVal)){
+          alert("ip输入错误,请重新输入ip");
+          isok = false;
+        }else{
+          isok = true;
+        }
+        return isok;
+      }
+      // 比较输入的字符串是否符合规则
+      function checkRate(nubmer) {
+        // var re = /^\*?[\/][0-9]{1,2}$|^[+]{0,1}(\d+)$|^[0-9]{1,2}[\/-][0-9]{1,2}$|^[0-9]{1,2}[\-][0-9]{1,2}[\/][0-9]{1,2}$|\*$/;
+        var re = /\*$|^[0-9]{1,2}[\-][0-9]{1,2}[\/][0-9]{1,2}$|^[0-9]{1,2}[\-][0-9]{1,2}$|^\*?[\/][0-9]{1,2}$|^[0-9]{1,2}$/
+        if (!re.test(nubmer)) {
+            return false;
+        }else{
+          return true;
+        }
+      }
+      //判断字符串是否是数字组成
+      function isNumber(val) {
+        var regPos = /^\d+(\.\d+)?$/; //非负浮点数
+        if(regPos.test(val)) {
+            return true;
+        }else{
+            return false;
+        }
+      }
+
+    </script>
+    <style>
+      iframe{
+        border: none;
+      }
+      #barcon a:hover{
+        background:#0062cc;
+        color:white;
+      }
+      .selectStyle{
+        float:left;
+        margin-right:10px;
+      }
+      .totalDataBgStyle{
+        background:pink;
+        border-radius:5px;
+      }
+      .bgstyle{
+        background:#f8f9fa;
+        border-radius:5px;
+      }
+      .editDataBgStyle{
+        background:#83818c;
+        border-radius:5px;
+      }
+      .officeBgStyle{
+        background:orange;
+        border-radius:5px;
+      }
+      .lifeBgStyle{
+        background:rebeccapurple;
+        border-radius:5px;
+      }
+      .equipmentBgStyle{
+        background:red;
+        border-radius:5px;
+      }
+      .booksBgStyle{
+        background:yellow;
+        border-radius:5px;
+      }
+      .othersBgStyle{
+        background:green;
+        border-radius:5px;
+      }
+      .btnDiv{
+        float:right;
+      }
+      .bgshow{
+        background:#007bff;
+        color:white;
+      }
+      .bghide{
+        background:white;
+        color:#007bff;
+      }
+      ul{list-style:none;}
+      #v-pills-Assets{
+        text-align:center;
+      }
+      .logo{
+        float:left;
+        background-image: url(InnoVision.jpg);
+        background-repeat:no-repeat;
+        background-size: 100% 100%;
+      }
+      #projectLeftContent,#docLeftContent{
+        float:left;
+      }
+      #projectRightContent{
+        margin-left:10px;
+        float:right;
+      }
+      #docRightContent{
+        float:right;
+      }
+      .tab-content{
+        padding-left:0px;
+      }
+      .col-1{
+        width:14%;
+        min-width:180px;
+      }
+      .timeExplain{
+        float:right;
+      }
+      #setCopyClock{
+        float:left;
+      }
+    </style>
+</head>
+<body>
+<div class="container-fluid" id="container">
+  <div class="header row">
+    <div class="logo col-lg-2 col-md-2 col-xs-12 col-sm-12"></div>
+    <div class="banner col-lg-10 col-md-10 col-xs-12 col-sm-12" style="line-height:60px;text-align:center;">
+      <span><font size=+3 color=red>欢迎使用INNOVISION内部管理平台</font></span>
+    </div>
+  </div>
+  <div class="content row">
+    <div class="nav flex-column nav-pills col-lg-2 col-md-2 col-xs-12 col-sm-12" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+      <div id="accordion">
+        <div class="card">
+          <div class="card-header">
+            <a class="card-link" data-toggle="collapse" href="#collapseOne">
+              文档管理
+            </a>
+          </div>
+          <div id="collapseOne" class="collapse show" data-parent="#accordion">
+            <div class="card-body">
+              <a class="nav-link active" onclick="cancelActive(this)" id="v-pills-doc-tab" data-toggle="pill" href="#v-pills-doc" role="tab" aria-controls="v-pills-doc" aria-selected="true">文档管理</a>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <a class="card-link" data-toggle="collapse" href="#collapseTwo">
+              项目管理
+            </a>
+          </div>
+          <div id="collapseTwo" class="collapse" data-parent="#accordion">
+            <div class="card-body">
+              <a class="nav-link" onmousedown="activityClickdown(this)" onmouseup="activityClickup(this)" target="_blank"  href="http://dev.cnv8.tv:8900/users/sign_in">GITLAB</a>
+              <a class="nav-link" onmousedown="activityClickdown(this)" onmouseup="activityClickup(this)" target="_blank"  href="http://dev.cnv8.tv:8901/index.php?m=user&f=login">禅道</a>
+              <a class="nav-link" onmousedown="activityClickdown(this)" onmouseup="activityClickup(this)" target="_blank"  href="http://webmail.idccenter.net/">Email</a>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <a class="card-link" data-toggle="collapse" href="#collapseThree">
+              资产管理
+            </a>
+          </div>
+          <div id="collapseThree" class="collapse" data-parent="#accordion">
+            <div class="card-body">
+              <a class="nav-link" onclick="cancelActive(this)" id="v-pills-Assets-tab" data-toggle="pill" href="#v-pills-Assets" role="tab" aria-controls="v-pills-Assets" aria-selected="false">资产管理</a>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <a class="card-link" data-toggle="collapse" href="#collapseFour">
+              服务器备份
+            </a>
+          </div>
+          <div id="collapseFour" class="collapse" data-parent="#accordion">
+            <div class="card-body">
+              <a class="nav-link" onclick="cancelActive(this)" id="v-pills-service-tab" data-toggle="pill" href="#v-pills-service" role="tab" aria-controls="v-pills-service" aria-selected="false">服务器备份</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content col-lg-10 col-md-10 col-xs-12 col-sm-12" id="v-pills-tabContent">
+      <div class="tab-pane fade show active row" id="v-pills-doc" role="tabpanel" aria-labelledby="v-pills-doc-tab">
+        <div class="doc-left col-4" id="docLeftContent">
+          <div class="" id="uploadFile">
+            <form action="http://192.168.6.110/manager/upload_file.php" method="post" target="_self" enctype="multipart/form-data">
+            	<input type="file" name="file" id="file">
+            	<input type="submit" name="submit" value="提交">
+            </form>
+          </div>
+          <div class="" id="listfiles">
+
+          </div>
+        </div>
+        <div class="doc-right col-8" id="docRightContent">
+
+        </div>
+      </div>
+      <div class="tab-pane fade" id="v-pills-Assets" role="tabpanel" aria-labelledby="v-pills-Assets-tab">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <ul class="navbar-nav">
+            <li class="nav-item active col-1">
+              <a class="nav-link" href="#" id="office" onclick="getdata(this)">办公用品耗材类</a>
+            </li>
+            <li class="nav-item  col-1">
+              <a class="nav-link" href="#"  id="life" onclick="getdata(this)">生活环境用品类</a>
+            </li>
+            <li class="nav-item  col-1">
+              <a class="nav-link" href="#" id="equipment" onclick="getdata(this)">设备配件类</a>
+            </li>
+            <li class="nav-item  col-1">
+              <a class="nav-link" href="#" id="books" onclick="getdata(this)">图书资料类</a>
+            </li>
+            <li class="nav-item  col-1">
+              <a class="nav-link" href="#" id="others" onclick="getdata(this)">其他类</a>
+            </li>
+            <li class="nav-item  col-1">
+              <a class="nav-link" href="#" id="totalData" onclick="getTotaldata(this)">totalData</a>
+            </li>
+            <li class="nav-item  col-1">
+              <a class="nav-link" href="#" id="editData" onclick="createdata(this)">EditData</a>
+            </li>
+          </ul>
+        </nav>
+        <div class="tableClass" id="tableClass">
+
+        </div>
+      </div>
+      <div class="tab-pane fade row" id="v-pills-service" role="tabpanel" aria-labelledby="v-pills-service-tab">
+        <div class="card col-lg-9 col-md-9 col-xs-12 col-sm-12" id="setCopyClock">
+          <div class="card-header">
+            设置备份定时
+          </div>
+          <div class="card-body">
+            <form>
+                <div class="form-group row">
+                  <label for="inputip" class="col-sm-2 col-form-label">ip</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputip" placeholder="127.0.0.1">
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label for="inputuser" class="col-sm-2 col-form-label">user</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputuser" placeholder="user">
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                  <div class="col-sm-10">
+                    <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label for="inputfolder" class="col-sm-2 col-form-label">folder</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputfolder" placeholder="/vagrant/Manager">
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label for="inputminute" class="col-sm-2 col-form-label">minute</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputminute" placeholder="15">
+                  </div>
+                </div>
+
+                <div class="form-group row">
+                  <label for="inputhour" class="col-sm-2 col-form-label">hour</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputhour" placeholder="10">
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label for="inputDays" class="col-sm-2 col-form-label">Days</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputDays" placeholder="20">
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label for="inputMonth" class="col-sm-2 col-form-label">Month</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputMonth" placeholder="3">
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label for="inputweek" class="col-sm-2 col-form-label">week</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputweek" placeholder="2">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <button class="btn btn-primary" onclick="serverCopy()">设置定时</button>
+                </div>
+              </form>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-3 col-xs-12 col-sm-12 card timeExplain">
+          <div class="card">
+            <div class="card-header">
+              输入格式说明:
+            </div>
+            <div class="card-body">
+              <div class="card">
+                <div class="card-header">
+                  IP和备份路径输入格式
+                </div>
+                <div class="card-body">
+                  <ul style="list-style-type:decimal;">
+                    <li>
+                      ip输入格式：127.0.0.1;
+                    </li>
+                    <li>
+                      备份路径格式：/vagrant
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">
+                  时间输入格式(minute,hour,day,month,week):
+                </div>
+                <div class="card-body">
+                  <ul style="list-style-type:decimal;">
+                    <li>
+                      例如：*(*表示每分钟)或者*/2(每2分钟也可写为/2);
+                    </li>
+                    <li>
+                      例如：10(表示第10分钟时);
+                    </li>
+                    <li>
+                      例如：1,10,15(表示1分钟，10分钟，15分钟时,也可写为1,10,15,)；
+                    </li>
+                    <li>
+                      例如：10-20(表示10-20分钟间);
+                    </li>
+                    <li>
+                      例如：10-20/2(表示10-20分钟间每2分钟);
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="modal fade" id="exampleModals" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+
+  </div> -->
+
+</div>
+</body>
+</html>

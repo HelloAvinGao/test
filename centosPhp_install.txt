@@ -1,0 +1,97 @@
+sudo yum install epel-release -y
+sudo yum install nginx -y
+sudo systemctl start nginx
+sudo systemctl enable nginx
+#获取当前ip
+#ip addr show enp0s8 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
+sudo yum install mariadb-server mariadb -y
+sudo systemctl start mariadb
+sudo mysql_secure_installation
+sudo systemctl enable mariadb
+sudo yum install php php-mysql php-fpm -y
+
+sed -i "s/listen = 127.0.0.1:9000/listen = \/var\/run\/php-fpm\/php-fpm.sock/g" /etc/php-php.d/www.conf 
+sed -i "s/user = apache/user = nginx/g" /etc/php-php.d/www.conf 
+sed -i "s/group = apache/group = nginx/g" /etc/php-php.d/www.conf 
+echo "listen.owner = nobody" >> etc/php-php.d/www.conf
+echo "listen.group = nobody" >> etc/php-php.d/www.conf.
+
+sudo systemctl start php-fpm
+sudo systemctl enable php-fpm
+cat > /etc/nginx/nginx.conf <<EOF
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+
+    server {
+        listen       80 default_server;
+        listen       [::]:80 default_server;
+        server_name  _;
+        root         /usr/share/nginx/html;
+
+        index index.php index.html index.htm;
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+
+        error_page 404 /404.html;
+            location = /40x.html {
+        }
+
+        error_page 500 502 503 504 /50x.html;
+            location = /50x.html {
+        }
+        location ~ \.php$ {
+                try_files $uri =404;
+                fastcgi_pass unix:/var/run/php-fpm/php-fpm.sock;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                include fastcgi_params;
+        }
+    }
+
+}
+EOF
+
+
+sudo systemctl restart nginx
+echo "<?php phpinfo(); ?>"  > /usr/share/nginx/html/info.php
+sudo nginx -t
+sudo nginx -s reload
+sudo systemctl restart nginx
+ls /usr/share/nginx/html/
+

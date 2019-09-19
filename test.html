@@ -1,0 +1,40 @@
+<!Doctype html>
+<html>
+<head>
+<title>test Modal</title>
+<meta charset="utf-8" />
+<script type="text/javascript">
+function ajaxPUT(){
+  var xmlhttp;
+  var files = document.getElementById("file");
+  console.log(files.value);
+  var fileSplit = files.value.split("\\");
+  var filename = fileSplit[fileSplit.length-1];
+  console.log(JSON.stringify(files));
+  console.log(typeof(files));
+  console.log(filename);
+  if(window.XMLHttpRequest){
+    xmlhttp=new XMLHttpRequest();
+  }else {
+    xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+  xmlhttp.onreadystatechange=function(){
+    if(xmlhttp.readyState==4&&xmlhttp.status==200){
+      var data=xmlhttp.responseText;
+      console.log(data);
+    }
+  }
+  xmlhttp.open("PUT","./"+filename,true);
+  xmlhttp.send(files);
+}
+</script>
+</head>
+<body>
+  <div>
+    <label for="file">Filename:</label>
+    <input type="file" name="file" id="file" />
+    <br />
+    <input type="submit" name="submit" value="Submit" onclick="ajaxPUT()" />
+  </div>
+</body>
+</html>
